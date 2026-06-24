@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="PL Personal"/>
+<title>PL Personal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:#0f1117;color:#e2e8f0;font-family:-apple-system,'Inter',system-ui,sans-serif;min-height:100vh;padding-bottom:60px;}
+input,select,textarea,button{font-family:inherit;}
+input,select,textarea{background:#0a0d14;border:1px solid #1a1f2e;border-radius:8px;padding:8px 11px;font-size:13px;color:#e2e8f0;width:100%;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:#6d5fed;}
+button{cursor:pointer;}
+.hdr{background:#0a0d14;border-bottom:1px solid #1a1f2e;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100;}
+.logo{font-size:15px;font-weight:700;letter-spacing:-.5px;color:#fff;}
+.logo-sub{font-size:10px;color:#374151;margin-top:1px;}
+.nav{display:flex;gap:2px;background:#0f1117;border-radius:8px;padding:3px;flex-wrap:wrap;}
+.nav-btn{padding:6px 11px;border-radius:6px;border:none;font-size:11px;font-weight:500;background:transparent;color:#4b5563;white-space:nowrap;transition:all .15s;}
+.nav-btn.active{background:#1e2740;color:#7C6FCD;}
+.body{padding:16px 18px;max-width:720px;margin:0 auto;}
+.card{background:#13171f;border:1px solid #1a1f2e;border-radius:12px;padding:16px 18px;margin-bottom:12px;}
+.kpi-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.kpi{background:#13171f;border:1px solid #1a1f2e;border-radius:10px;padding:12px 14px;flex:1;min-width:120px;}
+.kpi-label{font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.kpi-val{font-size:18px;font-weight:700;letter-spacing:-.5px;}
+.kpi-sub{font-size:10px;color:#374151;margin-top:3px;}
+.sec{font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.btn-p{padding:8px 18px;border-radius:8px;border:none;background:#6d5fed;color:#fff;font-size:12px;font-weight:600;}
+.btn-s{padding:7px 14px;border-radius:8px;border:1px solid #1a1f2e;background:transparent;color:#6b7280;font-size:12px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.div{height:1px;background:#1a1f2e;margin:10px 0;}
+.badge{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:600;margin-left:5px;}
+.bar-track{height:5px;background:#1a1f2e;border-radius:3px;overflow:hidden;margin:4px 0;}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s;}
+.drop-zone{border:2px dashed #1a1f2e;border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;background:#0a0d14;transition:all .2s;margin-bottom:12px;}
+.drop-zone.active{border-color:#7C6FCD;background:#1e1b3a;}
+.icon{font-size:26px;margin-bottom:8px;}
+.msg-ok{margin-top:10px;font-size:12px;padding:10px 14px;border-radius:8px;background:#0d2b20;color:#10b981;border:1px solid #065f46;}
+.msg-warn{margin-top:10px;font-size:12px;padding:10px 14px;border-radius:8px;background:#2b1800;color:#f59e0b;border:1px solid #92400e;}
+.line{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid #0a0d14;}
+.line-label{color:#6b7280;}
+.line-val{color:#e2e8f0;font-weight:500;}
+.total-line{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:7px 0;border-top:1px solid #1a1f2e;margin-top:4px;}
+.form-label{font-size:11px;color:#4b5563;margin-bottom:3px;display:block;}
+.edit-row{display:flex;gap:5px;flex:1;flex-wrap:wrap;}
+.edit-row input,.edit-row select{font-size:11px;padding:4px 8px;}
+.icon-btn{background:none;border:none;cursor:pointer;color:#374151;padding:0;font-size:13px;}
+.prov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;}
+.prov-card{background:#0a0d14;border-radius:8px;padding:10px 12px;border:1px solid #1a1f2e;}
+.empty{text-align:center;color:#374151;font-size:13px;padding:32px 0;}
+svg text{font-family:-apple-system,'Inter',system-ui,sans-serif;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="logo">PL Personal</div>
+    <div class="logo-sub">Control financiero · MXN</div>
+  </div>
+  <div class="nav" id="nav"></div>
+</div>
+<div class="body" id="app"></div>
+
+<script>
+// ── Utilidades ────────────────────────────────────────────
+const MXN = v => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(v||0);
+const PCT = v => `${(v||0).toFixed(1)}%`;
+const FF = {semanal:4.333,catorcenal:26/12,quincenal:2,mensual:1,semestral:1/6,anual:1/12};
+const toM = (m,f) => m*(FF[f]||1);
+const CATS = ['Obligaciones Financieras','Hogar','Salud','Educación / Hijos','Transporte / Auto','Comida / Entretenimiento'];
+const COLORS = ['#7C6FCD','#10B981','#F97316','#3B82F6','#F59E0B','#EC4899'];
+const FREQS = ['semanal','quincenal','catorcenal','mensual','semestral','anual'];
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// ── Estado global ─────────────────────────────────────────
+const S = {
+  tab: 'dashboard',
+  mes: new Date().getMonth(),
+  anio: new Date().getFullYear(),
+  ingresos: JSON.parse(localStorage.getItem('pl_i')||'null') || [
+    {id:1,nombre:'Sueldo',frecuencia:'catorcenal',monto:38132},
+    {id:2,nombre:'Honorarios MC',frecuencia:'mensual',monto:35000},
+    {id:3,nombre:'Intereses Joel y Diego',frecuencia:'mensual',monto:32900},
+    {id:4,nombre:'Sueldo efectivo',frecuencia:'mensual',monto:62500},
+    {id:5,nombre:'Aguinaldo',frecuencia:'anual',monto:144047},
+  ],
+  egresos: JSON.parse(localStorage.getItem('pl_e')||'null') || [
+    {id:101,cat:'Obligaciones Financieras',nombre:'Hipoteca',frecuencia:'mensual',monto:15500},
+    {id:102,cat:'Obligaciones Financieras',nombre:'MSI Scotia',frecuencia:'mensual',monto:6845.94},
+    {id:103,cat:'Obligaciones Financieras',nombre:'Intereses Suegro 1',frecuencia:'mensual',monto:1600},
+    {id:104,cat:'Obligaciones Financieras',nombre:'Intereses Suegro 2',frecuencia:'mensual',monto:1500},
+    {id:105,cat:'Obligaciones Financieras',nombre:'MSI Oro',frecuencia:'mensual',monto:5753.65},
+    {id:106,cat:'Obligaciones Financieras',nombre:'MINI',frecuencia:'mensual',monto:8150},
+    {id:201,cat:'Hogar',nombre:'Agua',frecuencia:'mensual',monto:800},
+    {id:202,cat:'Hogar',nombre:'Luz',frecuencia:'mensual',monto:1500},
+    {id:203,cat:'Hogar',nombre:'Gas',frecuencia:'anual',monto:4000},
+    {id:204,cat:'Hogar',nombre:'Cuota Peñasco',frecuencia:'mensual',monto:1200},
+    {id:205,cat:'Hogar',nombre:'Netflix/Apple/Amazon/Spotify',frecuencia:'mensual',monto:855},
+    {id:206,cat:'Hogar',nombre:'Telmex',frecuencia:'mensual',monto:499},
+    {id:207,cat:'Hogar',nombre:'Celular AT&T',frecuencia:'mensual',monto:1302.02},
+    {id:208,cat:'Hogar',nombre:'Predial',frecuencia:'anual',monto:4000},
+    {id:209,cat:'Hogar',nombre:'Alimentos / Despensa',frecuencia:'semanal',monto:4000},
+    {id:210,cat:'Hogar',nombre:'Aseo casa',frecuencia:'semanal',monto:500},
+    {id:211,cat:'Hogar',nombre:'Semanal Oly',frecuencia:'semanal',monto:2000},
+    {id:212,cat:'Hogar',nombre:'Semanal Lalo',frecuencia:'semanal',monto:5000},
+    {id:213,cat:'Hogar',nombre:'Ropa y calzado',frecuencia:'anual',monto:30000},
+    {id:301,cat:'Salud',nombre:'Seguro GMM',frecuencia:'anual',monto:99899},
+    {id:302,cat:'Salud',nombre:'Médicos',frecuencia:'mensual',monto:1000},
+    {id:303,cat:'Salud',nombre:'Farmacia',frecuencia:'mensual',monto:1000},
+    {id:304,cat:'Salud',nombre:'Veterinaria',frecuencia:'mensual',monto:300},
+    {id:305,cat:'Salud',nombre:'Seguro Ahorro',frecuencia:'anual',monto:88192},
+    {id:401,cat:'Educación / Hijos',nombre:'Colegiatura Danna',frecuencia:'mensual',monto:15500},
+    {id:501,cat:'Transporte / Auto',nombre:'Gasolina',frecuencia:'semanal',monto:700},
+    {id:502,cat:'Transporte / Auto',nombre:'Refrendo Sorento',frecuencia:'anual',monto:2348},
+    {id:503,cat:'Transporte / Auto',nombre:'Refrendo Forte',frecuencia:'anual',monto:940},
+    {id:504,cat:'Transporte / Auto',nombre:'Refrendo MINI',frecuencia:'anual',monto:5450},
+    {id:505,cat:'Transporte / Auto',nombre:'Seguro Sorento',frecuencia:'mensual',monto:810.5},
+    {id:506,cat:'Transporte / Auto',nombre:'Seguro Forte',frecuencia:'mensual',monto:810.5},
+    {id:507,cat:'Transporte / Auto',nombre:'Seguro MINI',frecuencia:'anual',monto:30000},
+    {id:508,cat:'Transporte / Auto',nombre:'Servicio Sorento',frecuencia:'semestral',monto:2200},
+    {id:509,cat:'Transporte / Auto',nombre:'Servicio Forte',frecuencia:'semestral',monto:2200},
+    {id:601,cat:'Comida / Entretenimiento',nombre:'Comidas fuera de casa',frecuencia:'mensual',monto:12000},
+    {id:602,cat:'Comida / Entretenimiento',nombre:'Gimnasio Lalo',frecuencia:'mensual',monto:4500},
+    {id:603,cat:'Comida / Entretenimiento',nombre:'Gimnasio Oly/Danna',frecuencia:'mensual',monto:1500},
+    {id:604,cat:'Comida / Entretenimiento',nombre:'Proteína',frecuencia:'mensual',monto:1000},
+    {id:605,cat:'Comida / Entretenimiento',nombre:'Vacaciones',frecuencia:'anual',monto:50000},
+    {id:606,cat:'Comida / Entretenimiento',nombre:'Fierabonos',frecuencia:'semestral',monto:4500},
+  ],
+  gastos: JSON.parse(localStorage.getItem('pl_g')||'[]'),
+  editI: null, editE: null, addI: false, addE: false,
+  ngFecha: new Date().toISOString().split('T')[0], ngDesc:'', ngMonto:'', ngCat:CATS[0],
+  niNombre:'', niFrecuencia:'mensual', niMonto:'',
+  neNombre:'', neFrecuencia:'mensual', neMonto:'', neCat:CATS[0],
+  importMsg:'',
+};
+const sv = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+const R = () => render();
+
+// ── Cálculos ──────────────────────────────────────────────
+const calc = () => {
+  const totalIngM = S.ingresos.reduce((s,i)=>s+toM(i.monto,i.frecuencia),0);
+  const totalEgM  = S.egresos.reduce((s,e)=>s+toM(e.monto,e.frecuencia),0);
+  const provisionM = S.egresos.filter(e=>e.frecuencia==='anual').reduce((s,e)=>s+e.monto/12,0);
+  const balance = totalIngM - totalEgM;
+  const gastosM = S.gastos.filter(g=>{const d=new Date(g.fecha+'T12:00:00');return d.getMonth()===S.mes&&d.getFullYear()===S.anio;});
+  const totalRealM = gastosM.reduce((s,g)=>s+Number(g.monto),0);
+  const catData = CATS.map((cat,i)=>{
+    const presup = S.egresos.filter(e=>e.cat===cat).reduce((s,e)=>s+toM(e.monto,e.frecuencia),0);
+    const provCat = S.egresos.filter(e=>e.cat===cat&&e.frecuencia==='anual').reduce((s,e)=>s+e.monto/12,0);
+    const real = gastosM.filter(g=>g.cat===cat).reduce((s,g)=>s+Number(g.monto),0);
+    const pct = presup>0?(real/presup)*100:0;
+    return {cat,presup,provCat,real,pct,color:COLORS[i]};
+  });
+  const sparkData = CATS.map((cat,ci)=>{
+    const vals = Array.from({length:6},(_,k)=>{
+      const m=(S.mes-5+k+12)%12, a=S.mes-5+k<0?S.anio-1:S.anio;
+      return S.gastos.filter(g=>{const d=new Date(g.fecha+'T12:00:00');return d.getMonth()===m&&d.getFullYear()===a&&g.cat===cat;}).reduce((s,g)=>s+Number(g.monto),0);
+    });
+    return {vals,color:COLORS[ci]};
+  });
+  return {totalIngM,totalEgM,provisionM,balance,gastosM,totalRealM,catData,sparkData};
+};
+
+// ── SVG helpers ───────────────────────────────────────────
+const donutSVG = (catData,totalEgM) => {
+  const r=30,cx=48,cy=48,circ=2*Math.PI*r;
+  const total=catData.reduce((s,c)=>s+c.presup,0)||1;
+  let off=0, paths='';
+  catData.forEach(c=>{
+    const dash=(c.presup/total)*circ,gap=circ-dash;
+    paths+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c.color}" stroke-width="14" stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${-off}" style="transform:rotate(-90deg);transform-origin:48px 48px"/>`;
+    off+=dash;
+  });
+  return `<svg width="96" height="96" viewBox="0 0 96 96">${paths}<circle cx="48" cy="48" r="22" fill="#0f1117"/></svg>`;
+};
+
+const sparkSVG = (vals,color) => {
+  if(!vals||vals.length<2)return '';
+  const w=90,h=26,max=Math.max(...vals)||1,min=Math.min(...vals),range=max-min||1;
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1))*w},${h-((v-min)/range)*(h-4)-2}`).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="overflow:visible"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+};
+
+const barHTML = (pct,color) => {
+  const p=Math.min(pct,100), c=pct>100?'#ef4444':pct>80?'#f59e0b':color;
+  return `<div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${c}"></div></div>`;
+};
+
+const badge = (text,color) => `<span class="badge" style="background:${color}22;color:${color}">${text}</span>`;
+const selMes = () => MESES.map((m,i)=>`<option value="${i}"${i===S.mes?' selected':''}>${m}</option>`).join('');
+const selAnio = () => [2024,2025,2026,2027].map(a=>`<option${a===S.anio?' selected':''}>${a}</option>`).join('');
+const selFreq = (cur) => FREQS.map(f=>`<option${f===cur?' selected':''}>${f}</option>`).join('');
+const selCats = (cur) => CATS.map(c=>`<option${c===cur?' selected':''}>${c}</option>`).join('');
+
+// ── Vistas ────────────────────────────────────────────────
+const viewDashboard = ({totalIngM,totalEgM,provisionM,balance,totalRealM,catData,sparkData}) => {
+  const anuales = S.egresos.filter(e=>e.frecuencia==='anual');
+  return `
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Ingresos / mes</div><div class="kpi-val" style="color:#10b981">${MXN(totalIngM)}</div><div class="kpi-sub">${MXN(totalIngM*12)} anual</div></div>
+    <div class="kpi"><div class="kpi-label">Egresos presup.</div><div class="kpi-val" style="color:#f97316">${MXN(totalEgM)}</div><div class="kpi-sub">${MXN(totalEgM*12)} anual</div></div>
+    <div class="kpi"><div class="kpi-label">Balance neto</div><div class="kpi-val" style="color:${balance>=0?'#7C6FCD':'#ef4444'}">${MXN(balance)}</div><div class="kpi-sub">${PCT(totalIngM>0?(balance/totalIngM)*100:0)} de ingresos</div></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Gasto real — ${MESES[S.mes].slice(0,3)}</div><div class="kpi-val">${MXN(totalRealM)}</div><div class="kpi-sub">${PCT(totalEgM>0?(totalRealM/totalEgM)*100:0)} ejecutado</div></div>
+    <div class="kpi"><div class="kpi-label">Provisión anual/mes</div><div class="kpi-val" style="color:#3b82f6">${MXN(provisionM)}</div><div class="kpi-sub">Reserva gastos anuales</div></div>
+    <div class="kpi"><div class="kpi-label">Disponible real</div><div class="kpi-val" style="color:${totalIngM-totalRealM>=0?'#10b981':'#ef4444'}">${MXN(totalIngM-totalRealM)}</div><div class="kpi-sub">Ingresos − gasto real</div></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+    <select onchange="S.mes=Number(this.value);R()">${selMes()}</select>
+    <select onchange="S.anio=Number(this.value);R()">${selAnio()}</select>
+  </div>
+  <div class="card">
+    <div class="sec">Distribución del presupuesto</div>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      ${donutSVG(catData,totalEgM)}
+      <div style="flex:1;min-width:180px">
+        ${catData.map(c=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="width:7px;height:7px;border-radius:2px;background:${c.color};display:inline-block"></span>
+              <span style="font-size:11px;color:#94a3b8">${c.cat.split(' / ')[0]}</span>
+            </div>
+            <div style="display:flex;gap:10px">
+              <span style="font-size:11px;color:#e2e8f0;font-weight:500">${MXN(c.presup)}</span>
+              <span style="font-size:10px;color:#4b5563">${PCT(totalEgM>0?(c.presup/totalEgM)*100:0)}</span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec">Presupuesto vs real · ${MESES[S.mes]} ${S.anio}</div>
+    ${catData.map((c,i)=>`
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px">
+          <div><span style="font-size:12px;color:#e2e8f0;font-weight:500">${c.cat}</span>${c.provCat>0?badge('prov. '+MXN(c.provCat),'#3b82f6'):''}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${sparkSVG(sparkData[i].vals,c.color)}
+            <span style="font-size:11px;font-weight:700;color:${c.pct>100?'#ef4444':c.pct>80?'#f59e0b':c.color};min-width:36px;text-align:right">${PCT(c.pct)}</span>
+          </div>
+        </div>
+        ${barHTML(c.pct,c.color)}
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#4b5563;margin-top:3px">
+          <span>Real: ${MXN(c.real)}</span><span>Ppto: ${MXN(c.presup)}</span>
+        </div>
+      </div>`).join('')}
+  </div>
+  <div class="card">
+    <div class="sec">Provisiones para gastos anuales</div>
+    <div class="prov-grid">
+      ${anuales.map(e=>`
+        <div class="prov-card">
+          <div style="font-size:11px;color:#6b7280;margin-bottom:2px">${e.nombre}</div>
+          <div style="font-size:14px;font-weight:700;color:#3b82f6">${MXN(e.monto/12)}<span style="font-size:10px;color:#4b5563;font-weight:400">/mes</span></div>
+          <div style="font-size:10px;color:#374151;margin-top:2px">Total: ${MXN(e.monto)}</div>
+        </div>`).join('')}
+    </div>
+    <div class="div"></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700">
+      <span style="color:#6b7280">Total provisión mensual</span>
+      <span style="color:#3b82f6">${MXN(provisionM)}</span>
+    </div>
+  </div>`;
+};
+
+const viewPL = ({totalIngM,totalEgM,provisionM,balance,gastosM,catData}) => `
+  <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+    <select onchange="S.mes=Number(this.value);R()">${selMes()}</select>
+    <select onchange="S.anio=Number(this.value);R()">${selAnio()}</select>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:#374151;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #1a1f2e">
+      <span>INGRESOS</span><span>MENSUALIZADO</span>
+    </div>
+    ${S.ingresos.map(i=>`
+      <div class="line">
+        <span class="line-label">${i.nombre} <span style="font-size:10px;color:#374151">(${i.frecuencia})</span></span>
+        <span class="line-val">${MXN(toM(i.monto,i.frecuencia))}</span>
+      </div>`).join('')}
+    <div class="total-line" style="color:#10b981"><span>Total ingresos</span><span>${MXN(totalIngM)}</span></div>
+  </div>
+  ${catData.map((c,ci)=>{
+    const items=S.egresos.filter(e=>e.cat===c.cat);
+    const realCat=gastosM.filter(g=>g.cat===c.cat).reduce((s,g)=>s+Number(g.monto),0);
+    const v=c.presup-realCat;
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;padding-bottom:6px;border-bottom:1px solid #1a1f2e">
+        <span style="font-size:10px;font-weight:700;color:${c.color}">${c.cat.toUpperCase()}</span>
+        <div style="display:flex;gap:14px;font-size:10px;color:#374151"><span>PRESUP.</span><span>REAL</span><span>VAR.</span></div>
+      </div>
+      ${items.map(e=>`
+        <div class="line">
+          <span style="color:#4b5563;font-size:11px">${e.nombre}<span style="font-size:9px;color:#2d3748;margin-left:4px">(${e.frecuencia})</span>${e.frecuencia==='anual'?badge('≈'+MXN(e.monto/12)+'/mes','#3b82f6'):''}</span>
+          <span style="color:#94a3b8;font-size:11px">${MXN(toM(e.monto,e.frecuencia))}</span>
+        </div>`).join('')}
+      <div class="total-line" style="color:${c.color}">
+        <span>Total</span>
+        <div style="display:flex;gap:14px">
+          <span>${MXN(c.presup)}</span>
+          <span style="color:${realCat>c.presup?'#ef4444':'#94a3b8'}">${MXN(realCat)}</span>
+          <span style="color:${v>=0?'#10b981':'#ef4444'}">${MXN(v)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}
+  <div class="card">
+    <div class="line"><span class="line-label">Total egresos presupuestados</span><span style="color:#f97316">${MXN(totalEgM)}</span></div>
+    <div class="line"><span class="line-label">Gasto real del mes</span><span style="color:#f97316">${MXN(totalRealM||0)}</span></div>
+    <div class="line"><span class="line-label">Provisión anuales/mes</span><span style="color:#3b82f6">${MXN(provisionM)}</span></div>
+    <div class="div"></div>
+    <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:5px 0">
+      <span>Balance neto mensual</span><span style="color:${balance>=0?'#10b981':'#ef4444'}">${MXN(balance)}</span>
+    </div>
+    <div style="font-size:10px;color:#374151;margin-top:5px">Anualizado — Ing: ${MXN(totalIngM*12)} · Eg: ${MXN(totalEgM*12)} · Balance: ${MXN(balance*12)}</div>
+  </div>`;
+
+const viewGastos = ({gastosM,totalRealM}) => `
+  <div class="card">
+    <div class="sec" style="margin-bottom:10px">Registrar gasto</div>
+    <div class="row2">
+      <div><label class="form-label">Fecha</label><input type="date" id="ng-fecha" value="${S.ngFecha}" onchange="S.ngFecha=this.value"/></div>
+      <div><label class="form-label">Monto $</label><input type="number" id="ng-monto" placeholder="0" value="${S.ngMonto}" oninput="S.ngMonto=this.value"/></div>
+    </div>
+    <div style="margin-bottom:8px"><label class="form-label">Descripción</label><input type="text" id="ng-desc" placeholder="Walmart, Doctor, Gasolina..." value="${S.ngDesc}" oninput="S.ngDesc=this.value"/></div>
+    <div style="margin-bottom:12px"><label class="form-label">Categoría</label><select id="ng-cat" onchange="S.ngCat=this.value">${selCats(S.ngCat)}</select></div>
+    <button class="btn-p" onclick="addGasto()">+ Agregar</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+    <select onchange="S.mes=Number(this.value);R()">${selMes()}</select>
+    <select onchange="S.anio=Number(this.value);R()">${selAnio()}</select>
+  </div>
+  ${gastosM.length===0?`<div class="card empty">Sin gastos en ${MESES[S.mes]} ${S.anio}</div>`:
+    CATS.map((cat,ci)=>{
+      const items=gastosM.filter(g=>g.cat===cat);
+      if(!items.length)return'';
+      const tot=items.reduce((s,g)=>s+Number(g.monto),0);
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:700;color:${COLORS[ci]}">${cat}</span>
+          <span style="font-size:12px;font-weight:700;color:#e2e8f0">${MXN(tot)}</span>
+        </div>
+        ${items.map(g=>`
+          <div class="line">
+            <div>
+              <span style="color:#c4c9d4">${g.desc}</span>
+              <span style="font-size:9px;color:#374151;margin-left:5px">${g.fecha}</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span style="font-weight:600;color:#e2e8f0">${MXN(g.monto)}</span>
+              <button class="icon-btn" onclick="delGasto(${g.id})">✕</button>
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }).join('')+
+    `<div class="card" style="display:flex;justify-content:space-between;font-size:14px;font-weight:700">
+      <span style="color:#6b7280">Total ${MESES[S.mes]}</span><span style="color:#f97316">${MXN(totalRealM)}</span>
+    </div>`
+  }`;
+
+const viewImportar = () => `
+  <div class="card">
+    <div class="sec">Importar estados de cuenta</div>
+    <p style="font-size:12px;color:#4b5563;margin:0 0 14px;line-height:1.7">
+      Sube archivos <strong style="color:#7C6FCD">TXT o CSV</strong> exportados de tu banco. La app los parsea y clasifica los cargos en tus categorías. <em style="color:#374151">(PDF no disponible en modo offline)</em>
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <span style="font-size:11px;color:#4b5563">Mes destino:</span>
+      <select onchange="S.mes=Number(this.value);R()">${selMes()}</select>
+      <select onchange="S.anio=Number(this.value);R()">${selAnio()}</select>
+    </div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-in').click()">
+      <div class="icon">📂</div>
+      <div style="font-size:13px;color:#94a3b8;font-weight:500">Haz clic para seleccionar archivos</div>
+      <div style="font-size:11px;color:#374151;margin-top:4px">TXT · CSV · múltiples archivos</div>
+    </div>
+    <input type="file" id="file-in" multiple accept=".txt,.csv" style="display:none" onchange="handleFiles(this.files)"/>
+    ${S.importMsg?`<div class="${S.importMsg.startsWith('ok')?'msg-ok':'msg-warn'}">${S.importMsg.replace(/^ok:|^warn:/,'')}</div>`:''}
+  </div>
+  <div class="card">
+    <div class="sec">O pega texto del estado de cuenta</div>
+    <textarea id="ec-txt" rows="6" placeholder="12/06/2026  WALMART LEON           $1,250.00&#10;13/06/2026  OXXO GAS               $800.00&#10;14/06/2026  COLEGIATURA CAMPUS     $15,500.00"
+      style="resize:vertical;min-height:100px;font-family:monospace;font-size:11px;line-height:1.6"></textarea>
+    <button class="btn-p" style="margin-top:10px" onclick="importarTexto()">Clasificar movimientos →</button>
+  </div>`;
+
+const viewPresupuesto = () => {
+  const totalIngM=S.ingresos.reduce((s,i)=>s+toM(i.monto,i.frecuencia),0);
+  const totalEgM=S.egresos.reduce((s,e)=>s+toM(e.monto,e.frecuencia),0);
+  return `
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="sec" style="margin:0">Ingresos</div>
+      <button class="btn-s" onclick="S.addI=!S.addI;R()">+ Agregar</button>
+    </div>
+    ${S.addI?`<div style="background:#0a0d14;border-radius:8px;padding:12px;margin-bottom:10px;display:grid;gap:6px">
+      <input placeholder="Nombre" id="ni-nom" oninput="S.niNombre=this.value" value="${S.niNombre}"/>
+      <select id="ni-frq" onchange="S.niFrecuencia=this.value">${selFreq(S.niFrecuencia)}</select>
+      <input type="number" placeholder="Monto" id="ni-mon" oninput="S.niMonto=this.value" value="${S.niMonto}"/>
+      <div style="display:flex;gap:8px"><button class="btn-p" onclick="saveIngreso()">Guardar</button><button class="btn-s" onclick="S.addI=false;R()">Cancelar</button></div>
+    </div>`:''}
+    ${S.ingresos.map(i=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:6px 0;border-bottom:1px solid #0a0d14">
+        ${S.editI===i.id?`<div class="edit-row">
+          <input id="ei-n-${i.id}" value="${i.nombre}" style="flex:2;min-width:80px"/>
+          <select id="ei-f-${i.id}" style="flex:1">${selFreq(i.frecuencia)}</select>
+          <input type="number" id="ei-m-${i.id}" value="${i.monto}" style="flex:1;min-width:60px"/>
+          <button class="btn-p" style="padding:4px 10px;font-size:11px" onclick="updateIngreso(${i.id})">OK</button>
+          <button class="btn-s" style="padding:4px 8px;font-size:11px" onclick="S.editI=null;R()">✕</button>
+        </div>`:`<>
+          <span style="color:#94a3b8;flex:1">${i.nombre} <span style="font-size:10px;color:#374151">(${i.frecuencia})</span></span>
+          <div style="display:flex;gap:10px;align-items:center">
+            <span style="color:#e2e8f0;font-weight:500">${MXN(i.monto)}</span>
+            <span style="font-size:10px;color:#374151">${MXN(toM(i.monto,i.frecuencia))}/mes</span>
+            <button class="icon-btn" onclick="S.editI=${i.id};R()">✎</button>
+            <button class="icon-btn" onclick="delIngreso(${i.id})">✕</button>
+          </div>
+        </>`}
+      </div>`).join('')}
+    <div class="total-line" style="color:#10b981"><span>Total / mes</span><span>${MXN(totalIngM)}</span></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="sec" style="margin:0">Egresos presupuestados</div>
+      <button class="btn-s" onclick="S.addE=!S.addE;R()">+ Agregar</button>
+    </div>
+    ${S.addE?`<div style="background:#0a0d14;border-radius:8px;padding:12px;margin-bottom:10px;display:grid;gap:6px">
+      <select id="ne-cat" onchange="S.neCat=this.value">${selCats(S.neCat)}</select>
+      <input placeholder="Nombre" id="ne-nom" oninput="S.neNombre=this.value" value="${S.neNombre}"/>
+      <select id="ne-frq" onchange="S.neFrecuencia=this.value">${selFreq(S.neFrecuencia)}</select>
+      <input type="number" placeholder="Monto" id="ne-mon" oninput="S.neMonto=this.value" value="${S.neMonto}"/>
+      <div style="display:flex;gap:8px"><button class="btn-p" onclick="saveEgreso()">Guardar</button><button class="btn-s" onclick="S.addE=false;R()">Cancelar</button></div>
+    </div>`:''}
+    ${CATS.map((cat,ci)=>{
+      const items=S.egresos.filter(e=>e.cat===cat);
+      const tot=items.reduce((s,e)=>s+toM(e.monto,e.frecuencia),0);
+      const prov=items.filter(e=>e.frecuencia==='anual').reduce((s,e)=>s+e.monto/12,0);
+      return `<div style="margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;color:${COLORS[ci]};padding:5px 0;border-bottom:1px solid #1a1f2e;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+          <span>${cat}</span>
+          <div style="display:flex;gap:8px;align-items:center;font-weight:400">
+            <span style="color:#374151">${MXN(tot)}/mes</span>
+            ${prov>0?badge('prov. '+MXN(prov),'#3b82f6'):''}
+          </div>
+        </div>
+        ${items.map(e=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:4px 0;border-bottom:1px solid #0a0d14">
+            ${S.editE===e.id?`<div class="edit-row">
+              <input id="ee-n-${e.id}" value="${e.nombre}" style="flex:2;min-width:80px"/>
+              <select id="ee-f-${e.id}" style="flex:1">${selFreq(e.frecuencia)}</select>
+              <input type="number" id="ee-m-${e.id}" value="${e.monto}" style="flex:1;min-width:60px"/>
+              <button class="btn-p" style="padding:3px 8px;font-size:11px" onclick="updateEgreso(${e.id})">OK</button>
+              <button class="btn-s" style="padding:3px 6px;font-size:11px" onclick="S.editE=null;R()">✕</button>
+            </div>`:`<>
+              <span style="color:#4b5563;flex:1">${e.nombre}<span style="font-size:9px;color:#2d3748;margin-left:4px">(${e.frecuencia})</span>${e.frecuencia==='anual'?badge('prov. '+MXN(e.monto/12),'#3b82f6'):''}</span>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span style="color:#94a3b8">${MXN(e.monto)}</span>
+                <span style="font-size:9px;color:#374151">${MXN(toM(e.monto,e.frecuencia))}/mes</span>
+                <button class="icon-btn" onclick="S.editE=${e.id};R()">✎</button>
+                <button class="icon-btn" onclick="delEgreso(${e.id})">✕</button>
+              </div>
+            </>`}
+          </div>`).join('')}
+      </div>`;
+    }).join('')}
+    <div class="total-line" style="color:#f97316"><span>Total egresos / mes</span><span>${MXN(totalEgM)}</span></div>
+  </div>`;
+};
+
+// ── Acciones ──────────────────────────────────────────────
+function addGasto(){
+  const d=document.getElementById('ng-desc'), m=document.getElementById('ng-monto'), f=document.getElementById('ng-fecha'), c=document.getElementById('ng-cat');
+  const desc=d?d.value:S.ngDesc, monto=m?m.value:S.ngMonto, fecha=f?f.value:S.ngFecha, cat=c?c.value:S.ngCat;
+  if(!monto||!desc)return;
+  S.gastos=[...S.gastos,{id:Date.now(),desc,monto:Number(monto),fecha,cat}];
+  sv('pl_g',S.gastos); S.ngDesc=''; S.ngMonto=''; R();
+}
+function delGasto(id){S.gastos=S.gastos.filter(g=>g.id!==id);sv('pl_g',S.gastos);R();}
+function saveIngreso(){
+  const n=document.getElementById('ni-nom')?.value, f=document.getElementById('ni-frq')?.value, m=document.getElementById('ni-mon')?.value;
+  if(!n||!m)return;
+  S.ingresos=[...S.ingresos,{id:Date.now(),nombre:n,frecuencia:f||'mensual',monto:Number(m)}];
+  sv('pl_i',S.ingresos); S.addI=false; S.niNombre=''; S.niMonto=''; R();
+}
+function updateIngreso(id){
+  const n=document.getElementById(`ei-n-${id}`)?.value, f=document.getElementById(`ei-f-${id}`)?.value, m=document.getElementById(`ei-m-${id}`)?.value;
+  S.ingresos=S.ingresos.map(x=>x.id===id?{...x,nombre:n,frecuencia:f,monto:Number(m)}:x);
+  sv('pl_i',S.ingresos); S.editI=null; R();
+}
+function delIngreso(id){S.ingresos=S.ingresos.filter(x=>x.id!==id);sv('pl_i',S.ingresos);R();}
+function saveEgreso(){
+  const ca=document.getElementById('ne-cat')?.value, n=document.getElementById('ne-nom')?.value, f=document.getElementById('ne-frq')?.value, m=document.getElementById('ne-mon')?.value;
+  if(!n||!m)return;
+  S.egresos=[...S.egresos,{id:Date.now(),cat:ca||CATS[0],nombre:n,frecuencia:f||'mensual',monto:Number(m)}];
+  sv('pl_e',S.egresos); S.addE=false; S.neNombre=''; S.neMonto=''; R();
+}
+function updateEgreso(id){
+  const n=document.getElementById(`ee-n-${id}`)?.value, f=document.getElementById(`ee-f-${id}`)?.value, m=document.getElementById(`ee-m-${id}`)?.value;
+  S.egresos=S.egresos.map(x=>x.id===id?{...x,nombre:n,frecuencia:f,monto:Number(m)}:x);
+  sv('pl_e',S.egresos); S.editE=null; R();
+}
+function delEgreso(id){S.egresos=S.egresos.filter(x=>x.id!==id);sv('pl_e',S.egresos);R();}
+
+function handleFiles(files){
+  Array.from(files).forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>importarTexto(e.target.result);
+    r.readAsText(f,'utf-8');
+  });
+}
+
+function importarTexto(textoParam){
+  const txt=textoParam||document.getElementById('ec-txt')?.value||'';
+  if(!txt.trim()){S.importMsg='warn:Pega texto antes de continuar.';R();return;}
+  // Parser simple de estados de cuenta — extrae montos negativos o líneas con $ y palabras clave
+  const lineas=txt.split('\n').filter(l=>l.trim());
+  const movimientos=[];
+  const catKeywords={
+    'Obligaciones Financieras':['hipoteca','credito','prestamo','scotia','bbva','banorte','santander','hsbc','amex','american express','banamex','interes','msi'],
+    'Hogar':['walmart','soriana','chedraui','costco','liverpool','sears','home depot','telmex','izzi','totalplay','megacable','att','telcel','movistar','predial','agua','luz','cfe','gas','netflix','spotify','amazon','apple'],
+    'Salud':['farmacia','doctor','medico','hospital','clinica','dentista','veterinaria','salud','seguro','gnp','axa','mapfre'],
+    'Educación / Hijos':['colegio','escuela','universidad','colegiatura','inscripcion','utiles','educacion'],
+    'Transporte / Auto':['pemex','oxxo gas','gasolina','shell','bp','mobil','autozone','refaccion','taller','uber','didi','cabify','estacionamiento','caseta','autopista','refrendo'],
+    'Comida / Entretenimiento':['restaurant','resto','cafe','cafeteria','starbucks','mcdonalds','kfc','burger','pizza','sushi','bar','antro','cine','cinepolis','cinemex','teatro','gimnasio','sport','fitness','viaje','hotel','airbnb']
+  };
+  const guessCategory=(desc)=>{
+    const d=desc.toLowerCase();
+    for(const [cat,keys] of Object.entries(catKeywords)){if(keys.some(k=>d.includes(k)))return cat;}
+    return 'Comida / Entretenimiento';
+  };
+  // Regex para montos: $1,234.56 o 1234.56 o -1234.56
+  const reDate=/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/;
+  const reMonto=/\$?\s*([\d,]+\.?\d*)/g;
+  lineas.forEach(linea=>{
+    const mObj=linea.match(reMonto);
+    if(!mObj)return;
+    const montos=mObj.map(m=>parseFloat(m.replace(/[$,]/g,''))).filter(m=>m>0&&m<500000);
+    if(!montos.length)return;
+    const monto=Math.max(...montos);
+    if(monto<10)return;
+    const dateM=linea.match(reDate);
+    let fecha=`${S.anio}-${String(S.mes+1).padStart(2,'0')}-01`;
+    if(dateM){
+      const d=dateM[1].padStart(2,'0'),mo=dateM[2].padStart(2,'0'),yr=dateM[3]?(dateM[3].length===2?'20'+dateM[3]:dateM[3]):S.anio;
+      fecha=`${yr}-${mo}-${d}`;
+    }
+    const desc=linea.replace(reMonto,'').replace(reDate,'').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g,' ').replace(/\s+/g,' ').trim().slice(0,60)||'Movimiento';
+    if(desc.length<2)return;
+    movimientos.push({id:Date.now()+Math.random(),desc,monto,fecha,cat:guessCategory(linea)});
+  });
+  if(movimientos.length){
+    S.gastos=[...S.gastos,...movimientos];
+    sv('pl_g',S.gastos);
+    S.importMsg=`ok:${movimientos.length} movimientos importados y clasificados.`;
+  }else{
+    S.importMsg='warn:No se encontraron cargos. Verifica que el texto incluya montos con formato $1,234.56';
+  }
+  R();
+}
+
+// ── Render ────────────────────────────────────────────────
+function render(){
+  const tabs=[['dashboard','Dashboard'],['pl','P&L'],['gastos','Registro'],['importar','Importar'],['presupuesto','Presupuesto']];
+  document.getElementById('nav').innerHTML=tabs.map(([id,lb])=>`<button class="nav-btn${S.tab===id?' active':''}" onclick="S.tab='${id}';R()">${lb}</button>`).join('');
+  const c=calc();
+  const views={dashboard:()=>viewDashboard(c),pl:()=>viewPL(c),gastos:()=>viewGastos(c),importar:viewImportar,presupuesto:viewPresupuesto};
+  document.getElementById('app').innerHTML=(views[S.tab]||views.dashboard)(c);
+  // Drag & drop
+  const dz=document.getElementById('drop-zone');
+  if(dz){
+    dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('active');});
+    dz.addEventListener('dragleave',()=>dz.classList.remove('active'));
+    dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('active');handleFiles(e.dataTransfer.files);});
+  }
+}
+
+render();
+</script>
+</body>
+</html>
